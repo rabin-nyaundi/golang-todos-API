@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
+	"todo/internal/data"
+
+	_ "github.com/lib/pq"
 )
 
 const version = "1.0.0"
@@ -14,11 +19,18 @@ const version = "1.0.0"
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  string
+	}
 }
 
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -27,18 +39,30 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4010, "API Server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment(development|staging|production)")
 
+	//? database connection flags
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("TODO_DB_DSN"), "PostgreSQL DSN")
+	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL maximum open connections")
+	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL maximum idle connections")
+	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "10m", "PostgreSQL maximum idle time")
+
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
+	db, err := openDB(cfg)
+
+	if err != nil {
+		logger.Printf(err.Error())
+	}
+
+	defer db.Close()
+	logger.Printf("database connection pool established")
+
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModel(db),
 	}
-
-	// mux := http.NewServeMux()
-	// mux.HandleFunc("/v1/todos", app.todo)
-
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      app.routes(),
@@ -47,11 +71,40 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	logger.Printf("application server started")
-
 	logger.Printf("starting %s server on %d", app.config.env, app.config.port)
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Fatal(err)
 	fmt.Println("Started your todo application")
+}
+
+func openDB(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+
+	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetConnMaxIdleTime(duration)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	defer cancel()
+
+	err = db.PingContext(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
