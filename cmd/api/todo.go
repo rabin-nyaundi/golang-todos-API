@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"todo/internal/data"
@@ -64,7 +65,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/todos/%d", todo.ID))
-	err = app.writeJSON(w, http.StatusCreated, envelope{"movie": todo})
+	err = app.writeJSON(w, http.StatusCreated, envelope{"todo": todo})
 
 	if err != nil {
 		app.logger.Printf(err.Error())
@@ -82,12 +83,18 @@ func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(id)
 
-	todo := data.Todo{
-		ID:          id,
-		Item:        "uyejhdkjldf",
-		Description: "Description of the todo",
-		Status:      false,
+	todo, err := app.models.Todo.GetTodo(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
+
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
 

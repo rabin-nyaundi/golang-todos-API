@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -26,14 +27,45 @@ func (t TodoModel) InsertTodo(todo *Todo) error {
 	`
 
 	args := []interface{}{todo.Item, todo.Description, todo.Status}
+
 	return t.DB.QueryRow(query, args...).Scan(&todo.ID, &todo.CreatedAt, &todo.Status)
 }
 
-func (t TodoModel) UpdateTodo(todo *Todo) error {
-	return nil
+func (t TodoModel) GetTodo(id int64) (*Todo, error) {
+
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+	SELECT * FROM todos
+	WHERE id = $1
+	`
+
+	var todo Todo
+
+	err := t.DB.QueryRow(query, id).Scan(
+		&todo.ID,
+		&todo.Item,
+		&todo.Description,
+		&todo.CreatedAt,
+		&todo.UpdatedAt,
+		&todo.Status,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+
+		default:
+			return nil, err
+		}
+	}
+	return &todo, nil
 }
 
-func (t TodoModel) GetTodo(todo *Todo) error {
+func (t TodoModel) UpdateTodo(todo *Todo) error {
 	return nil
 }
 
