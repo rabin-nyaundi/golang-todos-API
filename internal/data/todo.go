@@ -66,7 +66,20 @@ func (t TodoModel) GetTodo(id int64) (*Todo, error) {
 }
 
 func (t TodoModel) UpdateTodo(todo *Todo) error {
-	return nil
+	query := `
+	UPDATE todos
+	SET item = $1, description = $2, status = $3
+	WHERE id = $4
+	RETURNING item
+	`
+
+	args := []interface{}{
+		todo.Item,
+		todo.Description,
+		todo.Status,
+		todo.ID,
+	}
+	return t.DB.QueryRow(query, args...).Scan(&todo.Item)
 }
 
 func (t TodoModel) DeleteTodo(id int64) error {

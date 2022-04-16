@@ -73,7 +73,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
+func (app *application) getTodoByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.readIDParams(r)
 	if err != nil {
@@ -95,13 +95,66 @@ func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
 
 	if err != nil {
 		app.logger.Printf("an error is here")
 	}
 
+}
+
+func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParams(r)
+
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	todo, err := app.models.Todo.GetTodo(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Item        string `json:"item"`
+		Description string `json:"description"`
+		Status      bool   `json:"status"`
+	}
+
+	err = app.readJSON(w, r, &input)
+
+	if err != nil {
+		fmt.Println("Hyey it failed hfrissere")
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	todo.Item = input.Item
+	todo.Description = input.Description
+	todo.Status = input.Status
+
+	err = app.models.Todo.UpdateTodo(todo)
+
+	if err != nil {
+		fmt.Println("Hyey it failed here")
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 // func updateTodoHandler() {
