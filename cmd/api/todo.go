@@ -133,7 +133,7 @@ func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request
 	err = app.readJSON(w, r, &input)
 
 	if err != nil {
-		fmt.Println("Hyey it failed hfrissere")
+		fmt.Println("Hey it failed why fail here")
 		app.notFoundResponse(w, r)
 		return
 	}
@@ -154,12 +154,35 @@ func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
+		return
 	}
 }
 
-// func updateTodoHandler() {
+func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParams(r)
 
-// }
-// func deleteTodoHandler() {
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
 
-// }
+	err = app.models.Todo.DeleteTodo(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "todo deleted successfully"})
+
+	if err != nil {
+		app.logger.Println("it failed here")
+		app.serverErrorResponse(w, r, err)
+	}
+}
