@@ -186,3 +186,20 @@ func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) getAllTodoItemshandler(w http.ResponseWriter, r *http.Request) {
+	todos, err := app.models.Todo.GetAllTodoItems()
+
+	if err != nil {
+		app.logger.Println("error here", err)
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"data": todos})
+
+	if err != nil {
+		app.logger.Println("write to json error", err)
+		return
+	}
+
+	app.logger.Println(todos)
+}

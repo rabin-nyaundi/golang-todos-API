@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -107,6 +108,40 @@ func (t TodoModel) DeleteTodo(id int64) error {
 
 	return nil
 }
+func (t TodoModel) GetAllTodoItems() ([]*Todo, error) {
+	query := `
+	SELECT * FROM todos
+	`
 
-// curl -i -d "$BODY" localhost:4010/v1/todos
-// BODY='{"item":"description":Buy greens","I go to the market and buy some greens","status":"false"}'
+	var todo Todo
+
+	rows, err := t.DB.Query(query)
+
+	if err != nil {
+		return nil, ErrRecordNotFound
+	}
+
+	fmt.Println(rows, "rowssss")
+
+	todos := []*Todo{}
+
+	for rows.Next() {
+		err = rows.Scan(
+			&todo.ID,
+			&todo.Item,
+			&todo.Description,
+			&todo.CreatedAt,
+			&todo.UpdatedAt,
+			&todo.Status,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+		todos = append(todos, &todo)
+	}
+
+	fmt.Println("hjdwtgdhgwhdqyhjs")
+
+	return todos, nil
+}
