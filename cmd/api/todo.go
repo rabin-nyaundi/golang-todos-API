@@ -73,7 +73,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
+func (app *application) getTodoByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.readIDParams(r)
 	if err != nil {
@@ -95,7 +95,6 @@ func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
 
 	if err != nil {
@@ -104,9 +103,103 @@ func (app *application) getTodoById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func updateTodoHandler() {
+func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParams(r)
 
-// }
-// func deleteTodoHandler() {
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
 
-// }
+	todo, err := app.models.Todo.GetTodo(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Item        string `json:"item"`
+		Description string `json:"description"`
+		Status      bool   `json:"status"`
+	}
+
+	err = app.readJSON(w, r, &input)
+
+	if err != nil {
+		fmt.Println("Hey it failed why fail here")
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	todo.Item = input.Item
+	todo.Description = input.Description
+	todo.Status = input.Status
+
+	err = app.models.Todo.UpdateTodo(todo)
+
+	if err != nil {
+		fmt.Println("Hyey it failed here")
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParams(r)
+
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.models.Todo.DeleteTodo(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "todo deleted successfully"})
+
+	if err != nil {
+		app.logger.Println("it failed here")
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) getAllTodoItemshandler(w http.ResponseWriter, r *http.Request) {
+	todos, err := app.models.Todo.GetAllTodoItems()
+
+	if err != nil {
+		app.logger.Println("error here", err)
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"data": todos})
+
+	if err != nil {
+		app.logger.Println("write to json error", err)
+		return
+	}
+
+	app.logger.Println(todos)
+}
