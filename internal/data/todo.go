@@ -123,28 +123,31 @@ func (t TodoModel) DeleteTodo(id int64) error {
 
 	return nil
 }
-func (t TodoModel) GetAllTodoItems() ([]*Todo, error) {
+func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error) {
 	query := `
 	SELECT * FROM todos
+	WHERE (LOWER(item) = LOWER($1) OR $1 = '')
+	ORDER BY id
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
 	defer cancel()
 
-	var todo Todo
-
-	rows, err := t.DB.QueryContext(ctx, query)
+	rows, err := t.DB.QueryContext(ctx, query, item)
 
 	if err != nil {
 		return nil, ErrRecordNotFound
 	}
 
-	fmt.Println(rows, "rowssss")
+	defer rows.Close()
 
 	todos := []*Todo{}
 
 	for rows.Next() {
+
+		var todo Todo
+
 		err = rows.Scan(
 			&todo.ID,
 			&todo.Item,
@@ -160,7 +163,9 @@ func (t TodoModel) GetAllTodoItems() ([]*Todo, error) {
 		todos = append(todos, &todo)
 	}
 
-	fmt.Println("hjdwtgdhgwhdqyhjs")
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return todos, nil
 }

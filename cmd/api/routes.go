@@ -9,7 +9,7 @@ import (
 func (app *application) routes() *httprouter.Router {
 	router := httprouter.New()
 
-	router.HandlerFunc(http.MethodGet, "/v1/todos", app.getAllTodoItemshandler)
+	router.HandlerFunc(http.MethodGet, "/v1/todos", app.listTodoHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/todos/:id", app.getTodoByIdHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/todos", app.createTodoHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/todos/:id", app.updateTodoHandler)

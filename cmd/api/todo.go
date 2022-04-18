@@ -24,19 +24,34 @@ func (app *application) todo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// func (app *application) getAllTodos(w http.ResponseWriter, r *http.Request) {
-// 	id, err := app.readIDParams(r)
-// 	if err != nil {
-// 		http.NotFound(w, r)
-// 		return
-// 	}
+func (app *application) listTodoHandler(w http.ResponseWriter, r *http.Request) {
 
-// 	err = app.writeJSON(w, http.StatusOK, envelope{"todo id": id})
+	var input struct {
+		Item string
+		data.Filters
+	}
 
-// 	if err != nil {
-// 		app.logger.Printf("an error is here")
-// 	}
-// }
+	qs := r.URL.Query()
+
+	input.Item = app.readString(qs, "item", "")
+	input.Filters.Page = app.readInt(qs, "page", 1)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"id", "item", "description", "status", "-id"}
+
+	todos, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
+
+	if err != nil {
+		app.logger.Println("erroe in listtodohandler", err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, envelope{"todos": todos})
+
+	if err != nil {
+		app.logger.Printf(err.Error())
+	}
+	// fmt.Fprintf(w, "%+v\n", input)
+}
 
 func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
@@ -194,21 +209,4 @@ func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request
 		app.logger.Println("it failed here")
 		app.serverErrorResponse(w, r, err)
 	}
-}
-
-func (app *application) getAllTodoItemshandler(w http.ResponseWriter, r *http.Request) {
-	todos, err := app.models.Todo.GetAllTodoItems()
-
-	if err != nil {
-		app.logger.Println("error here", err)
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"data": todos})
-
-	if err != nil {
-		app.logger.Println("write to json error", err)
-		return
-	}
-
-	app.logger.Println(todos)
 }
