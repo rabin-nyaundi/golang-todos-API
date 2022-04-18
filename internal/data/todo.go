@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -26,10 +27,13 @@ func (t TodoModel) InsertTodo(todo *Todo) error {
 		VALUES ($1, $2, $3)
 		RETURNING id, created_at, status
 	`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
 
 	args := []interface{}{todo.Item, todo.Description, todo.Status}
 
-	return t.DB.QueryRow(query, args...).Scan(&todo.ID, &todo.CreatedAt, &todo.Status)
+	return t.DB.QueryRowContext(ctx, query, args...).Scan(&todo.ID, &todo.CreatedAt, &todo.Status)
 }
 
 func (t TodoModel) GetTodo(id int64) (*Todo, error) {
@@ -42,10 +46,14 @@ func (t TodoModel) GetTodo(id int64) (*Todo, error) {
 	SELECT * FROM todos
 	WHERE id = $1
 	`
-
 	var todo Todo
 
-	err := t.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
+	err := t.DB.QueryRowContext(ctx, query, id).Scan(
+		&[]byte{},
 		&todo.ID,
 		&todo.Item,
 		&todo.Description,
@@ -60,6 +68,7 @@ func (t TodoModel) GetTodo(id int64) (*Todo, error) {
 			return nil, ErrRecordNotFound
 
 		default:
+			fmt.Println("Error with timeout here")
 			return nil, err
 		}
 	}
@@ -73,6 +82,9 @@ func (t TodoModel) UpdateTodo(todo *Todo) error {
 	WHERE id = $4
 	RETURNING item
 	`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
 
 	args := []interface{}{
 		todo.Item,
@@ -80,7 +92,7 @@ func (t TodoModel) UpdateTodo(todo *Todo) error {
 		todo.Status,
 		todo.ID,
 	}
-	return t.DB.QueryRow(query, args...).Scan(&todo.Item)
+	return t.DB.QueryRowContext(ctx, query, args...).Scan(&todo.Item)
 }
 
 func (t TodoModel) DeleteTodo(id int64) error {
@@ -89,8 +101,11 @@ func (t TodoModel) DeleteTodo(id int64) error {
 	DELETE FROM todos
 	WHERE id = $1
 	`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
-	result, err := t.DB.Exec(query, id)
+	defer cancel()
+
+	result, err := t.DB.ExecContext(ctx, query, id)
 
 	if err != nil {
 		return err
@@ -113,9 +128,13 @@ func (t TodoModel) GetAllTodoItems() ([]*Todo, error) {
 	SELECT * FROM todos
 	`
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	defer cancel()
+
 	var todo Todo
 
-	rows, err := t.DB.Query(query)
+	rows, err := t.DB.QueryContext(ctx, query)
 
 	if err != nil {
 		return nil, ErrRecordNotFound
