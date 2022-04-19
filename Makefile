@@ -21,3 +21,6 @@ EXECUTE_DOWN_MIGRATIONS:
 
 ADD_TODOS_INDEXES:
 	migrate create -seq -ext .sql -dir=./migrations add_todos_indexes
+
+EXECUTE_UP_TODOS_INDEXES:
+	migrate -path=./migrations -database=$$TODO_DB_DSN up

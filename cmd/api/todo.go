@@ -37,7 +37,7 @@ func (app *application) listTodoHandler(w http.ResponseWriter, r *http.Request) 
 	input.Filters.Page = app.readInt(qs, "page", 1)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20)
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafeList = []string{"id", "item", "description", "status", "-id"}
+	input.Filters.SortSafeList = []string{"id", "item", "description", "status", "-id", "-item", "-status"}
 
 	todos, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
 
@@ -149,7 +149,7 @@ func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request
 	err = app.readJSON(w, r, &input)
 
 	if err != nil {
-		fmt.Println("Hey it failed why fail here")
+		fmt.Println("Hey it failed why fail here", err)
 		app.notFoundResponse(w, r)
 		return
 	}
@@ -210,3 +210,5 @@ func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+// BODY='{"item":"Code review","description":"Write description here","status":true}'

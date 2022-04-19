@@ -53,7 +53,7 @@ func (t TodoModel) GetTodo(id int64) (*Todo, error) {
 	defer cancel()
 
 	err := t.DB.QueryRowContext(ctx, query, id).Scan(
-		&[]byte{},
+		// &[]byte{},
 		&todo.ID,
 		&todo.Item,
 		&todo.Description,
@@ -124,11 +124,15 @@ func (t TodoModel) DeleteTodo(id int64) error {
 	return nil
 }
 func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error) {
-	query := `
-	SELECT * FROM todos
-	WHERE (LOWER(item) = LOWER($1) OR $1 = '')
-	ORDER BY id
-	`
+	query := fmt.Sprintf(`
+		SELECT * FROM todos
+		WHERE (STRPOS(LOWER(item), LOWER($1)) > 0 OR $1 = '')
+		ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
+
+	fmt.Println(filters.sortColumn())
+
+	//  (LOWER(item) = LOWER($1) OR $1 = '')
+	// (to_tsvector('simple',item) @@ plainto_tsquery('simple',$1) OR $1='')
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 
