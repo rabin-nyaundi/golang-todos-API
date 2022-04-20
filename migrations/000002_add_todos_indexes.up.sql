@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS todos_item_idx ON todos USING GIN(to_tsvector('simple', item))

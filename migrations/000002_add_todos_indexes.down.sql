@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS todos_item_idx

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -95,4 +96,40 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		return errors.New("body must only contain a single JSON value")
 	}
 	return nil
+}
+
+func (app *application) readString(qs url.Values, key string, defaultvalue string) string {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultvalue
+	}
+
+	return s
+}
+
+func (app *application) readCSV(qs url.Values, key string, defaultvalue []string) []string {
+	csv := qs.Get(key)
+
+	if csv == "" {
+		return defaultvalue
+	}
+	return strings.Split(csv, ",")
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultvalue int) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultvalue
+	}
+
+	i, err := strconv.Atoi(s)
+
+	if err != nil {
+		app.logger.Println(err, "Error readInt function")
+		return defaultvalue
+	}
+
+	return i
 }

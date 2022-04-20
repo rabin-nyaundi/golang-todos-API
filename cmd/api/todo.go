@@ -23,18 +23,34 @@ func (app *application) todo(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func (app *application) getAllTodos(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParams(r)
+
+func (app *application) listTodoHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input struct {
+		Item string
+		data.Filters
+	}
+
+	qs := r.URL.Query()
+
+	input.Item = app.readString(qs, "item", "")
+	input.Filters.Page = app.readInt(qs, "page", 1)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafeList = []string{"id", "item", "description", "status", "-id", "-item", "-status"}
+
+	todos, metadata, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
+
 	if err != nil {
-		http.NotFound(w, r)
+		app.logger.Println("error in listtodohandler", err)
 		return
 	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"todo id": id})
+	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "todos": todos})
 
 	if err != nil {
-		app.logger.Printf("an error is here")
+		app.logger.Printf(err.Error())
 	}
+	// fmt.Fprintf(w, "%+v\n", input)
 }
 
 func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request) {
@@ -125,22 +141,30 @@ func (app *application) updateTodoHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	var input struct {
-		Item        string `json:"item"`
-		Description string `json:"description"`
-		Status      bool   `json:"status"`
+		Item        *string `json:"item"`
+		Description *string `json:"description"`
+		Status      *bool   `json:"status"`
 	}
 
 	err = app.readJSON(w, r, &input)
 
 	if err != nil {
-		fmt.Println("Hey it failed why fail here")
+		fmt.Println("Hey it failed why fail here", err)
 		app.notFoundResponse(w, r)
 		return
 	}
 
-	todo.Item = input.Item
-	todo.Description = input.Description
-	todo.Status = input.Status
+	if input.Item != nil {
+		todo.Item = *input.Item
+	}
+
+	if input.Description != nil {
+		todo.Description = *input.Description
+	}
+
+	if input.Status != nil {
+		todo.Status = *input.Status
+	}
 
 	err = app.models.Todo.UpdateTodo(todo)
 
@@ -187,19 +211,4 @@ func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) getAllTodoItemshandler(w http.ResponseWriter, r *http.Request) {
-	todos, err := app.models.Todo.GetAllTodoItems()
-
-	if err != nil {
-		app.logger.Println("error here", err)
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"data": todos})
-
-	if err != nil {
-		app.logger.Println("write to json error", err)
-		return
-	}
-
-	app.logger.Println(todos)
-}
+// BODY='{"item":"Code review","description":"Write description here","status":true}'
