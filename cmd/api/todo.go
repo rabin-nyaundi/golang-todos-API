@@ -39,13 +39,13 @@ func (app *application) listTodoHandler(w http.ResponseWriter, r *http.Request) 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 	input.Filters.SortSafeList = []string{"id", "item", "description", "status", "-id", "-item", "-status"}
 
-	todos, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
+	todos, metadata, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
 
 	if err != nil {
-		app.logger.Println("erroe in listtodohandler", err)
+		app.logger.Println("error in listtodohandler", err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"todos": todos})
+	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "todos": todos})
 
 	if err != nil {
 		app.logger.Printf(err.Error())

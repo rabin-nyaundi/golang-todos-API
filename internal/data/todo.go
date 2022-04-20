@@ -123,11 +123,11 @@ func (t TodoModel) DeleteTodo(id int64) error {
 
 	return nil
 }
-func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error) {
+func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT * FROM todos
+		SELECT count(*) OVER(), * FROM todos
 		WHERE (STRPOS(LOWER(item), LOWER($1)) > 0 OR $1 = '')
-		ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
+		ORDER BY %s %s, id ASC LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
 
 	fmt.Println(filters.sortColumn())
 
@@ -138,14 +138,17 @@ func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error
 
 	defer cancel()
 
-	rows, err := t.DB.QueryContext(ctx, query, item)
+	args := []interface{}{item, filters.limit(), filters.offset()}
+
+	rows, err := t.DB.QueryContext(ctx, query, args...)
 
 	if err != nil {
-		return nil, ErrRecordNotFound
+		return nil, Metadata{}, ErrRecordNotFound
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	todos := []*Todo{}
 
 	for rows.Next() {
@@ -153,6 +156,7 @@ func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error
 		var todo Todo
 
 		err = rows.Scan(
+			&totalRecords,
 			&todo.ID,
 			&todo.Item,
 			&todo.Description,
@@ -162,14 +166,18 @@ func (t TodoModel) GetAllTodoItems(item string, filters Filters) ([]*Todo, error
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 		todos = append(todos, &todo)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return todos, nil
+	metadata := calculateMetadata(filters.Page, filters.PageSize, totalRecords)
+
+	fmt.Println(metadata)
+
+	return todos, metadata, nil
 }
