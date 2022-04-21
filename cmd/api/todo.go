@@ -19,7 +19,7 @@ func (app *application) todo(w http.ResponseWriter, r *http.Request) {
 	err := app.writeJSON(w, http.StatusOK, envelope{"server": env})
 
 	if err != nil {
-		app.logger.Printf(err.Error())
+		app.logger.PrintFatal(err, nil)
 	}
 
 }
@@ -42,15 +42,14 @@ func (app *application) listTodoHandler(w http.ResponseWriter, r *http.Request) 
 	todos, metadata, err := app.models.Todo.GetAllTodoItems(input.Item, input.Filters)
 
 	if err != nil {
-		app.logger.Println("error in listtodohandler", err)
+		app.logger.PrintFatal(err, nil)
 		return
 	}
 	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "todos": todos})
 
 	if err != nil {
-		app.logger.Printf(err.Error())
+		app.logger.PrintError(err, nil)
 	}
-	// fmt.Fprintf(w, "%+v\n", input)
 }
 
 func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +61,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 
 	err := app.readJSON(w, r, &input)
 	if err != nil {
-		app.logger.Fatal(err)
+		app.logger.PrintFatal(err, nil)
 	}
 
 	todo := &data.Todo{
@@ -74,8 +73,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 	err = app.models.Todo.InsertTodo(todo)
 
 	if err != nil {
-		fmt.Println("Failed !!!!")
-		app.logger.Printf(err.Error())
+		app.logger.PrintError(err, nil)
 		return
 	}
 
@@ -84,7 +82,7 @@ func (app *application) createTodoHandler(w http.ResponseWriter, r *http.Request
 	err = app.writeJSON(w, http.StatusCreated, envelope{"todo": todo})
 
 	if err != nil {
-		app.logger.Printf(err.Error())
+		app.logger.PrintError(err, nil)
 		return
 	}
 }
@@ -114,7 +112,7 @@ func (app *application) getTodoByIdHandler(w http.ResponseWriter, r *http.Reques
 	err = app.writeJSON(w, http.StatusOK, envelope{"todo": todo})
 
 	if err != nil {
-		app.logger.Printf("an error is here")
+		app.logger.PrintError(err, nil)
 	}
 
 }
@@ -206,9 +204,7 @@ func (app *application) deleteTodoHandler(w http.ResponseWriter, r *http.Request
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "todo deleted successfully"})
 
 	if err != nil {
-		app.logger.Println("it failed here")
+		app.logger.PrintError(err, nil)
 		app.serverErrorResponse(w, r, err)
 	}
 }
-
-// BODY='{"item":"Code review","description":"Write description here","status":true}'
