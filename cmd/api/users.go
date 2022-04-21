@@ -2,8 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"todo/internal/data"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,4 +55,31 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// BODY='{"name": "Rabin Nyaundi", "email": "rn@gmail.com", "password": "pass1word"}'
+func (app *application) GetUserByEmailHandler(w http.ResponseWriter, r *http.Request) {
+
+	params := httprouter.ParamsFromContext(r.Context())
+
+	email := params.ByName("email")
+
+	user, err := app.models.User.GetByEmail(email)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.logger.PrintError(err, nil)
+			return
+
+		default:
+			app.logger.PrintError(err, nil)
+			return
+		}
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user})
+
+	if err != nil {
+		app.logger.PrintError(err, nil)
+	}
+
+	fmt.Println(email, "here is the email you are looking for")
+}
