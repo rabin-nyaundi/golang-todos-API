@@ -29,7 +29,7 @@ func (f Filters) sortColumn() string {
 	panic("invalid sort param : " + f.Sort)
 }
 
-// Should return sort direction either ASCending or DEScending
+//? Should return sort direction either ASCending or DEScending
 func (f Filters) sortDirection() string {
 	if strings.HasPrefix(f.Sort, "-") {
 		return "DESC"
@@ -37,27 +37,26 @@ func (f Filters) sortDirection() string {
 	return "ASC"
 }
 
-//  number of records to return
+//?  number of records to return
 func (f Filters) limit() int {
 	return f.PageSize
 }
 
-// should return number of records to skip
+//? should return number of records to skip
 func (f Filters) offset() int {
 	return (f.Page - 1) * f.PageSize
 }
 
-
-// should return pagination metadata
+//? should return pagination metadata
 func calculateMetadata(page, pageSize, totalRecords int) Metadata {
 	if totalRecords == 0 {
 		return Metadata{}
 	}
 	return Metadata{
-		CurrentPage: page,
-		PageSize:    pageSize,
-		FirstPage:   1,
-		LastPage:    int(math.Ceil(float64(totalRecords) / float64(pageSize))),
+		CurrentPage:  page,
+		PageSize:     pageSize,
+		FirstPage:    1,
+		LastPage:     int(math.Ceil(float64(totalRecords) / float64(pageSize))),
 		TotalRecords: totalRecords,
 	}
 }

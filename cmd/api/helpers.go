@@ -127,7 +127,7 @@ func (app *application) readInt(qs url.Values, key string, defaultvalue int) int
 	i, err := strconv.Atoi(s)
 
 	if err != nil {
-		app.logger.Println(err, "Error readInt function")
+		app.logger.PrintFatal(err, nil)
 		return defaultvalue
 	}
 
