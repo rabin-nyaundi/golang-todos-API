@@ -48,6 +48,32 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	app.background(func() {
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+		if err != nil {
+			fmt.Println(err, "ERROR IS HERES")
+			app.logger.PrintError(err, nil)
+		}
+	})
+
+	// go func() {
+
+	// 	defer func() {
+	// 		if err := recover(); err != nil {
+	// 			app.logger.PrintError(fmt.Errorf("%s", err), nil)
+	// 		}
+	// 	}()
+
+	// 	err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+
+	// 	if err != nil {
+	// 		fmt.Println(err, "ERROR IS HERES")
+	// 		app.logger.PrintError(err, nil)
+	// 	}
+
+	// 	fmt.Println("Message sent MESSAGE")
+	// }()
+
 	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user})
 
 	if err != nil {
@@ -66,6 +92,7 @@ func (app *application) GetUserByEmailHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
 			app.logger.PrintError(err, nil)
 			return
 

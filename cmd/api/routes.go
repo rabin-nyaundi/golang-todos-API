@@ -20,6 +20,6 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/users/:email", app.GetUserByEmailHandler)
-	// router.HandlerFunc(http.MethodGet, "/v1/todos/all", app.getAllTodoItemshandler)
+
 	return app.recoverPanic(app.rateLimiter(router))
 }

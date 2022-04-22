@@ -1,0 +1,35 @@
+{{define "subject"}} Welcome to this app. {{ end }}
+
+{{define "plainBody"}}
+
+Hi {{.Name}}, 
+
+Thanks for signing up with us. Excited to have you onboard. 
+
+For future reference, your user id is {{.ID}}. 
+
+Thanks, 
+
+TaskApp Team.
+
+{{ end }}
+
+{{define "htmlBody"}}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <head>
+      <meta name="viewport" content="width=device-width" />
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+  </head>
+  <body>
+    <p>Hi {{.Name}},</p> <br> <br>
+    <p>Thanks for signing up with us. Excited to have you onboard.</p> <br> <br>
+    <p>For future reference, your user id is {{.ID}}</p> <br> <br>
+    <p>Thanks</p> <br> <br>
+    <p>The TaskApp Team</p> <br>
+  </body>
+</html>
+{{ end }}
